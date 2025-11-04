@@ -1,0 +1,36 @@
+{
+  "nodes": [
+    {
+      "id": "dHFCAMS9d22uKoxJosNZ-1",
+      "label": "vuln-api",
+      "style": "rounded=0;whiteSpace=wrap;html=1;",
+      "geometry": {
+        "x": "300",
+        "y": "360",
+        "width": "220",
+        "height": "110",
+        "as": "geometry"
+      }
+    },
+    {
+      "id": "dHFCAMS9d22uKoxJosNZ-4",
+      "label": "OWASP juice-shop",
+      "style": "rounded=0;whiteSpace=wrap;html=1;",
+      "geometry": {
+        "x": "300",
+        "y": "610",
+        "width": "220",
+        "height": "100",
+        "as": "geometry"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "dHFCAMS9d22uKoxJosNZ-8",
+      "source": "dHFCAMS9d22uKoxJosNZ-4",
+      "target": "dHFCAMS9d22uKoxJosNZ-1",
+      "style": "edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+    }
+  ]
+}
