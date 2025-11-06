@@ -47,11 +47,11 @@ def extract_findings(text: str, tool: str):
         for line in text.splitlines():
             if line.startswith("+ "):
                 msg = line[2:].strip()
-                
                 # セキュリティリスクレベルの基準値
                 sev = 2
                 if "missing" in msg.lower(): sev = 3
                 if "config" in msg.lower(): sev = 4 
+                
                 findings.append({
                     "tool": "nikto",
                     "host": host,
