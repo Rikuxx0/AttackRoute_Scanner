@@ -84,13 +84,27 @@ def main(args):
     G = compute_proximity(G, entry_nodes=args.entry_nodes)
     paths = extract_attack_paths(G, args.entry_nodes, args.critical_nodes)
 
-    print("\n=== Attack Chain ===")
-    for p in paths:
-        print(" → ".join([G.nodes[n]['label'] for n in p]))
+    # output section
+    output_lines = []
+    output_lines.append("\n=== Attack Chain ===")
+    if paths:
+        for p in paths:
+            output_lines.append(" → ".join([G.nodes[n]['label'] for n in p]))
+    else:
+        output_lines.append("(no valid attack chain found)")
 
-    print("\n=== node info ===")
+    output_lines.append("\n=== node info ===")
     for n, data in G.nodes(data=True):
-        print(f"{data.get('label', n)}:", data)
+        output_lines.append(f"{data.get('label', n)}: {data}")
+
+    # show result
+    print("\n".join(output_lines))
+
+    # save to file if specified
+    if args.out:
+        with open(args.out, "w") as f:
+            f.write("\n".join(output_lines))
+        print(f"\n[+] Result saved to {args.out}")
 
 
 if __name__ == "__main__":
@@ -98,6 +112,7 @@ if __name__ == "__main__":
     parser.add_argument("--drawio", required=True, help="Path to Draw.io JSON file")
     parser.add_argument("--mapping", required=True, help="Path to manual_mapping.json")
     parser.add_argument("--vuln_reports", nargs="+", required=True, help="List of parsed vuln report JSONs")
+    parser.add_argument("--out", required=True, help="Output file path to save result")
     parser.add_argument("--entry_nodes", nargs="+", required=True, help="Entry node IDs (external nodes)")
     parser.add_argument("--critical_nodes", nargs="+", required=True, help="Critical node IDs (target nodes)")
     args = parser.parse_args()
