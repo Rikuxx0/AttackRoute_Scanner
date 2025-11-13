@@ -20,7 +20,7 @@ if uploaded_file:
     data = json.load(uploaded_file)
     df = pd.DataFrame(data["nodes"])
 
-    st.subheader("ノード情報 (リスク順)")
+    st.subheader("ノード情報")
     st.dataframe(df.sort_values("Risk_Score", ascending=False))
 
     # Graph construction
