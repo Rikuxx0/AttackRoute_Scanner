@@ -208,5 +208,5 @@ __marimo__/
 
 # Others
 /sample_data
-/manual_mapping_script/manual_mapping.json
+/utils/manual_mapping_script/manual_mapping.json
 /outputs
