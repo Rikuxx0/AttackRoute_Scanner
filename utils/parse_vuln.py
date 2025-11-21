@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import re
 import json
 
@@ -63,8 +60,9 @@ def extract_findings(text: str, tool: str):
     return findings
 
 
-def parse_vuln_report(filepath: str):
-    text = read_file(filepath)
+def parse_vuln_report_text(text: str):
+    ## text = read_file(filepath)
+    
     tool = detect_tool(text)
     findings = extract_findings(text, tool)
 
@@ -82,15 +80,15 @@ def parse_vuln_report(filepath: str):
 
     return hosts
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="Simple Vulnerability Report Parser")
-    parser.add_argument("--input", "-i", required=True, help="Input report file (txt)")
-    parser.add_argument("--output", "-o", required=True, help="Output JSON file")
-    args = parser.parse_args()
-
-    result = parse_vuln_report(args.input)
-    with open(args.output, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
-
-    print(f"[+] Parsed and saved to {args.output}")
+## if __name__ == "__main__":
+##     import argparse
+##     parser = argparse.ArgumentParser(description="Simple Vulnerability Report Parser")
+##     parser.add_argument("--input", "-i", required=True, help="Input report file (txt)")
+##     parser.add_argument("--output", "-o", required=True, help="Output JSON file")
+##     args = parser.parse_args()
+##
+##     result = parse_vuln_report(args.input)
+##     with open(args.output, "w", encoding="utf-8") as f:
+##         json.dump(result, f, indent=2, ensure_ascii=False)
+##
+##     print(f"[+] Parsed and saved to {args.output}")

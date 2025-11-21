@@ -70,20 +70,30 @@ def to_graph_json(cells):
             })
     return {"nodes": nodes, "edges": edges}
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python parse_drawio_html.py diagram.html [out.json]")
-        sys.exit(1)
-    html_path = sys.argv[1]
-    outjson = sys.argv[2] if len(sys.argv) > 2 else "diagram.json"
-    with open(html_path, "r", encoding="utf-8", errors="ignore") as f:
-        h = f.read()
-    mxfile = extract_mxfile_from_html(h)
-    if not mxfile:
-        print("mxfile not found in HTML")
-        sys.exit(2)
+# parse_drawio_html.py
+def parse_drawio_from_html_text(drawio_html_file):
+    mxfile = extract_mxfile_from_html(drawio_html_file)
     cells = parse_mxfile(mxfile)
     graph = to_graph_json(cells)
-    with open(outjson, "w", encoding="utf-8") as fo:
-        json.dump(graph, fo, ensure_ascii=False, indent=2)
-    print(f"wrote {outjson} (nodes: {len(graph['nodes'])}, edges: {len(graph['edges'])})")
+    return graph
+
+
+
+
+## if __name__ == "__main__":
+##    if len(sys.argv) < 2:
+##        print("Usage: python parse_drawio_html.py diagram.html [out.json]")
+##        sys.exit(1)
+##    html_path = sys.argv[1]
+##    outjson = sys.argv[2] if len(sys.argv) > 2 else "diagram.json"
+##    with open(html_path, "r", encoding="utf-8", errors="ignore") as f:
+##        h = f.read()
+##    mxfile = extract_mxfile_from_html(h)
+##    if not mxfile:
+##        print("mxfile not found in HTML")
+##        sys.exit(2)
+##    cells = parse_mxfile(mxfile)
+##    graph = to_graph_json(cells)
+##  with open(outjson, "w", encoding="utf-8") as fo:
+##        json.dump(graph, fo, ensure_ascii=False, indent=2)
+##    print(f"wrote {outjson} (nodes: {len(graph['nodes'])}, edges: {len(graph['edges'])})")

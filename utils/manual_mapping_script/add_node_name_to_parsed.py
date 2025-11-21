@@ -37,20 +37,28 @@ def try_match_label_for_host(host_key: str, host_entry: Dict[str, Any], labels: 
             return label
     return ""
 
-def add_node_names(vuln_path: str, drawio_path: str, mapping_path: str = None) -> Dict[str, Any]:
-    vuln = load_json(vuln_path)
-    drawio = load_json(drawio_path)
-    labels = extract_labels_from_drawio(drawio)
-    label_map = {l: l for l in labels}
+def add_node_names_from_dict(vuln_dict: dict, drawio_dict: dict, manual_map: dict = None) -> dict:
+    ## vuln = load_json(vuln_path)
+    ## drawio = load_json(drawio_path)
 
+
+    labels = extract_labels_from_drawio(drawio_dict)
+    label_map = {l: l for l in labels}
+    
     # --- 手動マッピング読み込み ---
-    manual_map = {}
-    if mapping_path:
-        manual_map = load_json(mapping_path)
-        print(f"manual_mapping.json 読み込み完了 ({len(manual_map)} 件)")
+    ## manual_map = {}
+    ## if mapping_path:
+    ##     manual_map = load_json(mapping_path)
+    ##     print(f"manual_mapping.json 読み込み完了 ({len(manual_map)} 件)")
+
+    if manual_map is None:
+        manual_map = {}
+
 
     unmapped = []
-    for host_key, entry in vuln.items():
+
+
+    for host_key, entry in vuln_dict.items():
         # 1 手動マッピング優先
         if host_key in manual_map:
             entry["node_name"] = manual_map[host_key]
@@ -64,23 +72,22 @@ def add_node_names(vuln_path: str, drawio_path: str, mapping_path: str = None) -
             unmapped.append(host_key)
 
     if unmapped:
-        print(" 自動マッチできなかったエントリ:")
         for u in unmapped:
             print("  -", u)
 
-    return vuln
+    return vuln_dict
 
-def main():
-    p = argparse.ArgumentParser(description="Add node_name to parsed nuclei JSON (manual mapping supported)")
-    p.add_argument("--vuln", "-v", required=True, help="parsed nuclei JSON file (input)")
-    p.add_argument("--drawio", "-d", required=True, help="draw.io JSON file")
-    p.add_argument("--mapping", "-m", required=False, help="manual_mapping.json (optional)")
-    p.add_argument("--out", "-o", required=True, help="output JSON file")
-    args = p.parse_args()
+## def main():
+##     p = argparse.ArgumentParser(description="Add node_name to parsed nuclei JSON (manual mapping supported)")
+##     p.add_argument("--vuln", "-v", required=True, help="parsed nuclei JSON file (input)")
+##     p.add_argument("--drawio", "-d", required=True, help="draw.io JSON file")
+##     p.add_argument("--mapping", "-m", required=False, help="manual_mapping.json (optional)")
+##     p.add_argument("--out", "-o", required=True, help="output JSON file")
+##     args = p.parse_args()
+##
+##     merged = add_node_names(args.vuln, args.drawio, args.mapping)
+##     save_json(merged, args.out)
+##     print(f" 出力完了: {args.out}")
 
-    merged = add_node_names(args.vuln, args.drawio, args.mapping)
-    save_json(merged, args.out)
-    print(f" 出力完了: {args.out}")
-
-if __name__ == "__main__":
-    main()
+## if __name__ == "__main__":
+##    main()
