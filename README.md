@@ -1,10 +1,14 @@
 # AttackRoute_Scanner
 本ツールは、Draw.io で定義されたシステム構造と、Nuclei/Nikto による脆弱性診断結果を自動統合し、
-攻撃チェーン・ノード特性・リスクスコアを一括可視化するための PoC です。
+攻撃チェーン・ノード特性・リスクスコアを一括可視化するためのプロトタイプです。
 
 - 攻撃経路を NetworkX + PyVis で自動推論
 - ノードごとの脆弱性数・Severity・重要度・proximity を統合
 - リスクスコアを算出し可視化
+
+以下の資料を参考に作成しております。
+https://www.notion.so/28b52696249280ad8634ca451f4b7fb4?pvs=74
+
 
 ## 処理フロー
 1. Draw.io → parse_drawio_html　→ drawioのアーキテクチャの解析後データ
