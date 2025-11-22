@@ -7,9 +7,9 @@
 - リスクスコアを算出し可視化
 
 ## 処理フロー
-1. Draw.io → parse_drawio_html   
-2. Nuclei/Nikto → parse_vuln → manual_mapping 
-3. 1, 2の処理後、networkx_core → risk_calc → Streamlit 可視化
+1. Draw.io → parse_drawio_html　→ drawioのアーキテクチャの解析後データ
+2. Nuclei/Nikto → parse_vuln → manual_mapping → 脆弱性診断のレポートの解析データ
+3. drawioのアーキテクチャの解析後データ、脆弱性診断のレポートの解析データの統合 → networkx_core → risk_calc → Streamlit 可視化
 
 # 使い方
 1. Draw.io の HTML を export してアップロード
