@@ -1,5 +1,3 @@
-# save as parse_drawio_html.py
-import json
 import html
 import re
 from xml.etree import ElementTree as ET
