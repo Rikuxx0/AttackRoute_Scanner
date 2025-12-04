@@ -6,7 +6,7 @@ from pyvis.network import Network
 import tempfile
 import os
 
-from utils.parse_drawio_html import parse_drawio_from_html_text
+from utils.parse_drawio_xml import parse_drawio_xml
 from utils.parse_vuln import parse_vuln_report_text
 from utils.manual_mapping_script.add_node_name_to_parsed import add_node_names_from_dict
 from utils.networkx_core import build_attack_graph
@@ -20,15 +20,15 @@ st.set_page_config(page_title="Attack Chain Visulaication", layout="wide")
 st.title("攻撃チェーン・リスク可視化デモ")
 
 st.subheader("入力ファイル")
-drawio_html = st.file_uploader("Draw.io の html をアップロードしてください（構造情報）", type=["html"])
+drawio_xml = st.file_uploader("Draw.io の xml をアップロードしてください（構造情報）", type=["xml"])
 uploaded_reports = st.file_uploader("TXTファイルで出力された脆弱性レポート (Nuclei/Nikto)をアップロードしてください", type=["txt"], accept_multiple_files=True)
 uploaded_map = st.file_uploader("あらかじめ、ドメイン名とdrawio上のホスト名が紐付いたJSONファイルをアップロードしてください", type=["json"])
 
-if drawio_html and uploaded_reports:
+if drawio_xml and uploaded_reports:
 
     # translate drawio html into drawio json
-    drawio_html_text = drawio_html.read().decode("utf-8")
-    drawio_dict = parse_drawio_from_html_text(drawio_html_text)
+    drawio_xml_text = drawio_xml.read().decode("utf-8")
+    drawio_dict = parse_drawio_xml(drawio_xml_text)
 
     # parse vuln reports
     vuln_dict = {}   
@@ -161,4 +161,4 @@ if drawio_html and uploaded_reports:
 
 
 else:
-    st.info("Draw.io JSON と Risk JSON と Manual Map JSON をアップロードしてください。")
+    st.info("Draw.io xml と Risk JSON と Manual Map JSON をアップロードしてください。")

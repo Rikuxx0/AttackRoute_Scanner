@@ -2,39 +2,24 @@
 import json
 import html
 import re
-import sys
 from xml.etree import ElementTree as ET
 
-def extract_mxfile_from_html(html_text):
-    # find data-mxgraph="...mxfile..."
-    m = re.search(r'data-mxgraph="({.*?})"', html_text)
-    if not m:
-        raise ValueError("data-mxgraph JSON not found in HTML")
 
-    # unescape HTML entities
-    json_str = html.unescape(m.group(1))
-
-     # sometimes the attribute includes surrounding braces or JSON wrapper; try to find actual <mxfile ...>...</mxfile>
-    data = json.loads(json_str)
-    xml_text = data.get("xml", None)
-    if not xml_text:
-        raise ValueError("No 'xml' field found inside data-mxgraph")
-    
-    return xml_text
-
-def parse_mxfile(xml_text):
-    ns = {}  # no namespaces usually
+def parse_mxfile(xml_text: str):
+    """
+    Parse pure draw.io XML (the content of a .drawio file)
+    """
     root = ET.fromstring(xml_text)
-    # find mxGraphModel -> diagram -> mxGraphModel -> root -> mxCell
     cells = []
-    for mxcell in root.findall(".//mxCell"):
+
+    for mxcell in root.iter("mxCell"):
         attr = mxcell.attrib.copy()
-        # find geometry child if exists
+
         geom = mxcell.find("mxGeometry")
         geom_attrib = geom.attrib.copy() if geom is not None else {}
-        value = attr.get("value", "")
-        # sometimes value contains HTML encoded snippets; unescape
-        value = html.unescape(value)
+
+        value = html.unescape(attr.get("value", ""))
+
         cells.append({
             "id": attr.get("id"),
             "value": value,
@@ -46,34 +31,45 @@ def parse_mxfile(xml_text):
             "style": attr.get("style"),
             "geometry": geom_attrib
         })
+
     return cells
 
+
 def to_graph_json(cells):
+    """
+    Convert parsed cells → nodes + edges dictionary
+    """
     nodes = []
     edges = []
+
     for c in cells:
+        # vertex = node
         if c.get("vertex") == "1":
-            # extract a readable label: strip html tags if present
-            label = re.sub(r'<[^>]+>', '', c.get("value") or "").strip()
+            label = re.sub(r"<[^>]+>", "", c.get("value") or "").strip()
             nodes.append({
                 "id": c["id"],
                 "label": label,
                 "style": c.get("style"),
-                "geometry": c.get("geometry")
+                "geometry": c.get("geometry"),
             })
+
+        # edge
         if c.get("edge") == "1":
             edges.append({
                 "id": c["id"],
                 "source": c.get("source"),
                 "target": c.get("target"),
-                "style": c.get("style")
+                "style": c.get("style"),
             })
+
     return {"nodes": nodes, "edges": edges}
 
-# parse_drawio_html.py
-def parse_drawio_from_html_text(drawio_html_file):
-    mxfile = extract_mxfile_from_html(drawio_html_file)
-    cells = parse_mxfile(mxfile)
+
+def parse_drawio_xml(xml_text: str):
+    """
+    Entry point: parse only pure draw.io XML
+    """
+    cells = parse_mxfile(xml_text)
     graph = to_graph_json(cells)
     return graph
 
