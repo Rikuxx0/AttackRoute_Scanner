@@ -3,7 +3,7 @@ import re
 
 # ====== Node importance weight configuration ======
 IMPORTANCE = {
-    "admin UI": 4.0,
+    "admin ui": 4.0,
     "redis": 3.0,
     "vuln-api": 2.0,
     "owasp juice-shop": 1.0,
