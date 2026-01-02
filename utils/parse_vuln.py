@@ -1,4 +1,6 @@
 import re
+import html
+from urllib.parse import urlparse
 
 def read_file(path: str) -> str:
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -18,19 +20,36 @@ def extract_findings(text: str, tool: str):
     findings = []
 
     if tool == "nuclei":
-        pattern = re.compile(r"\[(?P<template>[^\]]+)\]\s+\[http\]\s+\[(?P<sev>[^\]]+)\]\s+(?P<url>\S+)")
+        pattern = re.compile(r"\[(?P<template>[^\]]+)\]\s+\[[^\]]+\]\s+\[(?P<sev>[^\]]+)\]\s+(?P<url>.*)")
         for m in pattern.finditer(text):
-            url = m.group("url")
-            host_match = re.search(r"https?://([^/:]+)(?::(\d+))?", url)
-            host = host_match.group(1) if host_match else "unknown"
-            port = int(host_match.group(2)) if host_match and host_match.group(2) else 80
+            raw_url = m.group("url").strip()
+            clean_url = raw_url.split(" ")[0]
+            
+            host = "unknown"
+            port = 80
+
+            host_match = re.search(r"https?://([^/:]+)(?::(\d+))?", clean_url)
+            if host_match:
+                host = host_match.group(1)
+                if host_match.group(2):
+                    port = int(host_match.group(2))
+            else:
+                parts = clean_url.split(':')
+                host_and_path = parts[0]
+                host = host_and_path.split('/')[0]
+                if len(parts) > 1:
+                    port_and_path = parts[1]
+                    port_str = port_and_path.split('/')[0]
+                    if port_str.isdigit():
+                        port = int(port_str)
+
             sev_map = {"info":1,"low":2,"medium":3,"high":4,"critical":5} #セキュリティリスクレベルの基準値
             findings.append({
                 "tool": "nuclei",
                 "host": host,
                 "port": port,
-                "url": url,
-                "title": m.group("template"),
+                "url": html.escape(clean_url),
+                "title": html.escape(m.group("template")),
                 "severity": sev_map.get(m.group("sev").lower(),1)
             })
 
@@ -43,6 +62,16 @@ def extract_findings(text: str, tool: str):
         for line in text.splitlines():
             if line.startswith("+ "):
                 msg = line[2:].strip()
+                
+                path_match = re.search(r"^(?:[A-Z]+)\s+([^\s:]+)", msg)
+                if path_match:
+                    path = path_match.group(1)
+                    if not path.startswith('/'):
+                        path = '/' + path
+                    url = f"http://{host}:{port}{path}"
+                else:
+                    url = f"http://{host}:{port}/"
+
                 # セキュリティリスクレベルの基準値
                 sev = 2
                 if "missing" in msg.lower(): sev = 3
@@ -52,8 +81,8 @@ def extract_findings(text: str, tool: str):
                     "tool": "nikto",
                     "host": host,
                     "port": port,
-                    "url": f"http://{host}:{port}/",
-                    "title": msg[:80],
+                    "url": html.escape(url),
+                    "title": html.escape(msg[:80]),
                     "severity": sev
                 })
     return findings

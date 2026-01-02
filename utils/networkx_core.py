@@ -1,139 +1,177 @@
 import math
 import networkx as nx
+import re
 
+# --- Constants ---
+ENTRY_KEYWORDS = ["web", "ui", "frontend", "shop", "wordpress"]
+CRITICAL_KEYWORDS = ["db", "redis", "api", "admin", "backend"]
+
+# Node importance weight configuration
+IMPORTANCE_CONFIG = {
+    "db": 4.0,
+    "redis": 3.0,
+    "api": 3.0,
+    "admin": 3.0,
+    "backend": 3.0,
+    "default": 1.0,
+}
+
+# --- Helper Functions ---
+def _normalize_text(text: str) -> str:
+    """Converts text to a consistent format for comparison."""
+    if not text:
+        return ""
+    return re.sub(r"[\s\-_]+", "", text.lower())
+
+# --- Graph Building and Enrichment ---
 
 def build_graph_from_dict(data: dict):
-    # loading a drawio architecture map
-    ## with open(drawio_json_path, "r") as f:
-    ##    data = json.load(f)
-
-
-    G = nx.DiGraph() # directed graph
-
-    # adding nodes and edges
+    """Creates a directed graph from a dictionary of nodes and edges."""
+    G = nx.DiGraph()
     for node in data["nodes"]:
         G.add_node(node["id"], label=node.get("label", "unknown"))
-
     for edge in data["edges"]:
         G.add_edge(edge["source"], edge["target"])
-
     return G
 
 def attach_vuln_data_dict(G, vuln_dict: dict, manual_map: dict):
-    #associating parsed info with nodes and edges
-    
-    #loading mapping info with networkx
-    ## with open(mapping_file, "r") as f:
-    ##     raw_mapping = json.load(f)
-    ## mapping = {v: k for k, v in raw_mapping.items()}
+    """
+    Attaches vulnerability data to graph nodes, prioritizing manual mapping
+    but falling back to automatic name matching.
+    """
+    # Pre-normalize maps for efficient and robust lookup
+    norm_vuln_map = {_normalize_text(k): v for k, v in vuln_dict.items()}
+    norm_manual_map = {_normalize_text(k): v for k, v in manual_map.items()}
 
-    # associate vuln datas with mapping info
-    ## vuln_data = {}
-    ## for path in vuln_files:
-    ##     with open(path, "r") as f:
-    ##         vuln_data.update(json.load(f))
+    for node_id, data in G.nodes(data=True):
+        # Initialize with defaults
+        data["Vuln_Count"] = 0
+        data["Severity"] = 0.0
+        
+        label = data.get("label")
+        if not label:
+            continue
 
-    # print(vuln_dict)
+        norm_label = _normalize_text(label)
 
-    # associate every vuln datas with nodes
-    for node_id, node in G.nodes(data=True):
-        label = node.get("label")
-        host_key = manual_map.get(label)
-        print(f"Node: {label}, host_key: {host_key}") 
+        # Priority 1: Manual Mapping (normalized)
+        host_key = norm_manual_map.get(norm_label)
         if host_key and host_key in vuln_dict:
             v = vuln_dict[host_key]
-            node["Vuln_Count"] = v.get("Vuln_Count", 0)
-            node["Severity"] = v.get("Severity", 0)
-        else:
-            node["Vuln_Count"] = 0
-            node["Severity"] = 0
-        
-        
+            data["Vuln_Count"] = v.get("Vuln_Count", 0)
+            data["Severity"] = v.get("Severity", 0.0)
+            continue # Move to next node once mapped
+
+        # Priority 2: Automatic Fallback Mapping
+        for norm_host, vuln_data in norm_vuln_map.items():
+            if norm_label in norm_host:
+                data["Vuln_Count"] = vuln_data.get("Vuln_Count", 0)
+                data["Severity"] = vuln_data.get("Severity", 0.0)
+                # print(f"Auto-mapped '{label}' to '{norm_host}'") # Optional: for debugging
+                break # Stop after first match
     return G
 
 
-
-
 def compute_proximity(G, entry_nodes: list, beta: float = 0.7):
-    # Calculate the hop distance from the intruder node using exponential decay
+    """
+    Computes proximity to entry points for all nodes in the graph.
+    """
+    for node_id in G.nodes:
+        G.nodes[node_id]["proximity"] = 0.0
+
     for entry in entry_nodes:
+        if entry not in G:
+            continue
+        
         lengths = nx.single_source_shortest_path_length(G, entry)
         for target, d in lengths.items():
             proximity = math.exp(-beta * d)
-            if "proximity" not in G.nodes[target]:
-                G.nodes[target]["proximity"] = proximity
-            else:
-                G.nodes[target]["proximity"] = max(G.nodes[target]["proximity"], proximity)
+            G.nodes[target]["proximity"] = max(
+                G.nodes[target].get("proximity", 0), proximity
+            )
+    return G
 
-    return G     
+def assign_importance(G):
+    """Assigns an 'Importance' score to each node based on its label."""
+    for node_id, data in G.nodes(data=True):
+        label = data.get("label", "").lower()
+        importance = IMPORTANCE_CONFIG["default"]
+        for key, value in IMPORTANCE_CONFIG.items():
+            if key != "default" and key in label:
+                importance = value
+                break
+        data["Importance"] = importance
+    return G
+
+def calculate_risk_score(G):
+    """
+    Calculates the 'Risk_Score' for each node based on its attributes.
+    Risk_Score = (Vuln_Count * Severity) * Importance * proximity
+    """
+    for node_id, data in G.nodes(data=True):
+        vuln_count = data.get("Vuln_Count", 0)
+        severity = data.get("Severity", 0.0)
+        importance = data.get("Importance", 1.0)
+        proximity = data.get("proximity", 0.0)
+
+        risk = (vuln_count * severity) * importance * proximity
+        data["Risk_Score"] = round(risk, 6)
+    return G
+
+# --- Node Detection and Path Extraction ---
+
+def detect_nodes_by_keywords(G, keywords: list):
+    """Finds nodes whose labels contain any of the given keywords."""
+    matched_nodes = []
+    for node_id, data in G.nodes(data=True):
+        label = data.get("label", "").lower()
+        if any(k in label for k in keywords):
+            matched_nodes.append(node_id)
+    return matched_nodes
+
+def detect_entry_nodes(G):
+    """
+    Detects potential entry nodes based on graph topology or keywords.
+    """
+    entries = set(n for n in G.nodes if G.in_degree(n) == 0)
+    keyword_entries = detect_nodes_by_keywords(G, ENTRY_KEYWORDS)
+    entries.update(keyword_entries)
+    return list(entries)
+
+def detect_critical_nodes(G):
+    """Detects critical nodes based on keywords in their labels."""
+    return detect_nodes_by_keywords(G, CRITICAL_KEYWORDS)
 
 def extract_attack_paths(G, entry_nodes: list, critical_nodes: list):
-    # Extract the route from the intrusion origin to the important node
+    """Finds all shortest paths from entry nodes to critical nodes."""
     paths = []
     for e in entry_nodes:
         for c in critical_nodes:
-            if nx.has_path(G, e, c):
-                paths.append(nx.shortest_path(G, e, c))
+            if G.has_node(e) and G.has_node(c) and nx.has_path(G, e, c):
+                for path in nx.all_shortest_paths(G, source=e, target=c):
+                    paths.append(path)
     return paths
 
+# --- Main Orchestration Function ---
 
-# build the graph of each attack chains 
-def build_attack_graph(drawio_dict, vuln_dict, manual_map, entry_nodes, critical_nodes):
+def build_attack_graph(drawio_dict, vuln_dict, manual_map, entry_nodes=None, critical_nodes=None):
+    """
+    Builds and enriches the attack graph with all relevant data and calculations.
+    """
     G = build_graph_from_dict(drawio_dict)
     G = attach_vuln_data_dict(G, vuln_dict, manual_map)
+
+    if not entry_nodes:
+        entry_nodes = detect_entry_nodes(G)
+    if not critical_nodes:
+        critical_nodes = detect_critical_nodes(G)
+
+    # Compute metrics and risk
     G = compute_proximity(G, entry_nodes)
+    G = assign_importance(G)
+    G = calculate_risk_score(G)
+
+    # Find attack paths
     paths = extract_attack_paths(G, entry_nodes, critical_nodes)
+
     return G, paths
-
-
-
-
-## def main(args):
-##     G = build_graph_from_dict(args.drawio)
-##
-##     G = attach_vuln_data_dict(
-##         G,
-##         vuln_files=args.vuln_reports,
-##         mapping_file=args.mapping
-##     )
-## 
-##     G = compute_proximity(G, entry_nodes=args.entry_nodes)
-##     paths = extract_attack_paths(G, args.entry_nodes, args.critical_nodes)
-##
-##     # output section
-##     output_lines = []
-##     output_lines.append("\n=== Attack Chain ===")
-##     if paths:
-##         for p in paths:
-##             output_lines.append(" → ".join([G.nodes[n]['label'] for n in p]))
-##     else:
-##         output_lines.append("(no valid attack chain found)")
-## 
-##     output_lines.append("\n=== node info ===")
-##     for n, data in G.nodes(data=True):
-##         output_lines.append(f"{data.get('label', n)}: {data}")
-## 
-##     # show result
-##     print("\n".join(output_lines))
-## 
-##     # save to file if specified
-##     if args.out:
-##         with open(args.out, "w") as f:
-##             f.write("\n".join(output_lines))
-##         print(f"\n[+] Result saved to {args.out}")
-
-
-## if __name__ == "__main__":
-##     parser = argparse.ArgumentParser(description="Attack Chain Builder with NetworkX")
-##     parser.add_argument("--drawio", required=True, help="Path to Draw.io JSON file")
-##     parser.add_argument("--mapping", required=True, help="Path to manual_mapping.json")
-##     parser.add_argument("--vuln_reports", nargs="+", required=True, help="List of parsed vuln report JSONs")
-##     parser.add_argument("--out", required=True, help="Output file path to save result")
-##     parser.add_argument("--entry_nodes", nargs="+", required=True, help="Entry node IDs (external nodes)")
-##     parser.add_argument("--critical_nodes", nargs="+", required=True, help="Critical node IDs (target nodes)")
-##     args = parser.parse_args()
-##
-##     main(args) 
-
-
-

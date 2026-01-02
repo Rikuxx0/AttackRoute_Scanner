@@ -208,6 +208,4 @@ __marimo__/
 
 # Others
 /sample_data
-/utils/manual_mapping_script/manual_mapping.json
-/outputs/nuclei_only_report.pdf
-/outputs/report_all.pdf
+/outputs

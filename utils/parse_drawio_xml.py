@@ -43,10 +43,17 @@ def to_graph_json(cells):
     for c in cells:
         # vertex = node
         if c.get("vertex") == "1":
-            label = re.sub(r"<[^>]+>", "", c.get("value") or "").strip()
+            value = c.get("value") or ""
+            # Replace <br>, </p>, </div> with a space to preserve separation
+            value_with_spaces = re.sub(r"</p>|<br/?>|</div>", " ", value, flags=re.I)
+            # Remove all other HTML tags
+            stripped_value = re.sub(r"<[^>]+>", "", value_with_spaces)
+            # Consolidate whitespace and strip leading/trailing spaces
+            label = re.sub(r"\s+", " ", stripped_value).strip()
+
             nodes.append({
                 "id": c["id"],
-                "label": label,
+                "label": html.escape(label),
                 "style": c.get("style"),
                 "geometry": c.get("geometry"),
             })
