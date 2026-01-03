@@ -12,7 +12,7 @@ from utils.networkx_core import build_attack_graph
 
 # --- UI settings ---
 st.set_page_config(page_title="Attack Chain Visualization", layout="wide")
-st.title("攻撃チェーン・リスク可視化デモ")
+st.title("攻撃チェーン・リスク可視化ツール")
 
 # --- File Uploaders ---
 st.subheader("入力ファイル")
