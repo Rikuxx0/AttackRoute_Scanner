@@ -62,4 +62,4 @@ Draw.io上のラベル名（例: "OWASP juice-shop"）と、脆弱性レポー�
   "Risk_Score": 24.96
 }
 ```
-*このREADMEは、[Notionの参考資料](https://www.notion.so/28b52696249280ad8634ca451f4b7fb4?pvs=74)を基に作成されています。*
+*このREADMEは、[Notionの参考資料](https://www.notion.so/28b52696249280ad8634ca451f4b7fb4?pvs=74)を基に作成されています。また、demo_AttackRoute_Scanner.zipには実際のツールのデモ動画が入っています。*

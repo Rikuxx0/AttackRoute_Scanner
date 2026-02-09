@@ -121,9 +121,9 @@ if drawio_xml and uploaded_reports and uploaded_map:
         target_node_data = G.nodes[target_id]
         
         risk = target_node_data.get("Risk_Score", 0.0)
-        width = 1 + (risk / 10)
-        red = min(255, int(risk * 10))
-        green = max(0, 150 - int(risk * 5))
+        width = 1 + (risk / 1500)
+        red = min(255, int(risk * 20))
+        green = max(0, 150 - int(risk * 20))
         color = f"rgb({red},{green},80)"
 
         title = f"To: {target_node_data.get('label', 'N/A')}\n" + json.dumps(target_node_data, indent=2)
