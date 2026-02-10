@@ -9,10 +9,18 @@ import os
 from utils.parse_drawio_xml import parse_drawio_xml
 from utils.parse_vuln import parse_vuln_report_text
 from utils.networkx_core import build_attack_graph
+from utils.rag import generate_risk_assessment_from_reports
 
 # --- UI settings ---
 st.set_page_config(page_title="Attack Chain Visualization", layout="wide")
 st.title("攻撃チェーン・リスク可視化ツール")
+
+st.info("""
+**初めてお使いの方へ:**
+このツールは、攻撃シナリオの解説を生成するためにGoogleのGemini APIを使用します。
+Streamlitのsecrets機能を使って、お使いのGemini APIキーを`GEMINI_API_KEY`という名前で設定してください。
+詳細は、Streamlitの[ドキュメント](https://docs.streamlit.io/library/advanced-features/secrets-management)をご参照ください。
+""")
 
 # --- File Uploaders ---
 st.subheader("入力ファイル")
@@ -28,8 +36,10 @@ if drawio_xml and uploaded_reports and uploaded_map:
     drawio_dict = parse_drawio_xml(drawio_xml_text)
 
     vuln_dict = {}
+    report_texts = []
     for rep in uploaded_reports:
         txt = rep.read().decode("utf-8")
+        report_texts.append(txt)
         parsed = parse_vuln_report_text(txt)
         for key, value in parsed.items():
             if key in vuln_dict:
@@ -87,12 +97,38 @@ if drawio_xml and uploaded_reports and uploaded_map:
     else:
         st.warning("グラフにノードがありません。")
 
-    # 5. Display Detected Attack Paths
-    st.subheader("検出された攻撃パス（最短経路）")
+    # 5. Display Detected Attack Paths and Generate Explanations
+    st.subheader("検出された攻撃チェーンと総リスク評価")
     if attack_paths:
+        # Create a reverse map from node ID to domain name for easy lookup
+        id_to_domain_map = {v: k for k, v in manual_map.items()}
+
         for i, path in enumerate(attack_paths):
             path_labels = [G.nodes[node_id].get('label', 'unknown') for node_id in path]
             st.markdown(f"**Path {i+1}:** `{' → '.join(path_labels)}`")
+
+            # --- Prepare data for RAG, including Risk_Scores ---
+            path_node_scores = []
+            for node_id in path:
+                node_info = G.nodes[node_id]
+                path_node_scores.append({
+                    'label': node_info.get('label', 'unknown'),
+                    'Risk_Score': node_info.get('Risk_Score', 'N/A')
+                })
+
+            # --- Display RAG explanation in an expander ---
+            with st.expander(f"Path {i+1} のリスク評価を見る"):
+                # --- DEBUG: Display data being sent to RAG ---
+                st.subheader("Debug Info: Data for AI")
+                st.markdown("**Attack Path with Scores:**")
+                st.json(path_node_scores)
+                # --- END DEBUG ---
+
+                with st.spinner("実際にいくつかの攻撃シナリオが存在する可能性を分析しています..."):
+                    st.subheader("リスク評価")
+                    # Pass the risk scores to the RAG function
+                    explanation = generate_risk_assessment_from_reports(path_node_scores, report_texts)
+                    st.markdown(explanation, unsafe_allow_html=True)
     else:
         st.info("侵入口から重要ノードへの攻撃パスは見つかりませんでした。")
 
@@ -121,7 +157,7 @@ if drawio_xml and uploaded_reports and uploaded_map:
         target_node_data = G.nodes[target_id]
         
         risk = target_node_data.get("Risk_Score", 0.0)
-        width = 1 + (risk / 1500)
+        width = 1 + (risk / 900)
         red = min(255, int(risk * 20))
         green = max(0, 150 - int(risk * 20))
         color = f"rgb({red},{green},80)"
@@ -137,4 +173,4 @@ if drawio_xml and uploaded_reports and uploaded_map:
         os.remove(tmp_file.name)
 
 else:
-    st.info("Draw.io XML, 脆弱性レポート, และ Manual Map JSON をすべてアップロードしてください。")
+    st.info("Draw.io XML、脆弱性レポート、マニュアルマップJSONをすべてアップロードすると、分析が開始されます。")
