@@ -23,7 +23,7 @@
 ## インストール
 必要なPythonライブラリをインストールします。
 ```bash
-pip install streamlit pandas networkx pyvis
+pip install streamlit pandas networkx pyvis google.generativeai
 ```
 
 ## 使い方
