@@ -88,7 +88,7 @@ if drawio_xml and uploaded_reports and uploaded_map:
     node_data = [data for _, data in G.nodes(data=True)]
     
     # 4. Display the integrated node information table
-    st.subheader("統合ノード情報")
+    st.subheader("リスク結果")
     if node_data:
         df = pd.DataFrame(node_data)
         display_cols = ["label", "Risk_Score", "Vuln_Count", "Severity", "Importance", "proximity"]
@@ -97,44 +97,8 @@ if drawio_xml and uploaded_reports and uploaded_map:
     else:
         st.warning("グラフにノードがありません。")
 
-    # 5. Display Detected Attack Paths and Generate Explanations
-    st.subheader("検出された攻撃チェーンと総リスク評価")
-    if attack_paths:
-        # Create a reverse map from node ID to domain name for easy lookup
-        id_to_domain_map = {v: k for k, v in manual_map.items()}
-
-        for i, path in enumerate(attack_paths):
-            path_labels = [G.nodes[node_id].get('label', 'unknown') for node_id in path]
-            st.markdown(f"**Path {i+1}:** `{' → '.join(path_labels)}`")
-
-            # --- Prepare data for RAG, including Risk_Scores ---
-            path_node_scores = []
-            for node_id in path:
-                node_info = G.nodes[node_id]
-                path_node_scores.append({
-                    'label': node_info.get('label', 'unknown'),
-                    'Risk_Score': node_info.get('Risk_Score', 'N/A')
-                })
-
-            # --- Display RAG explanation in an expander ---
-            with st.expander(f"Path {i+1} のリスク評価を見る"):
-                # --- DEBUG: Display data being sent to RAG ---
-                st.subheader("Debug Info: Data for AI")
-                st.markdown("**Attack Path with Scores:**")
-                st.json(path_node_scores)
-                # --- END DEBUG ---
-
-                with st.spinner("実際にいくつかの攻撃シナリオが存在する可能性を分析しています..."):
-                    st.subheader("リスク評価")
-                    # Pass the risk scores to the RAG function
-                    explanation = generate_risk_assessment_from_reports(path_node_scores, report_texts)
-                    st.markdown(explanation, unsafe_allow_html=True)
-    else:
-        st.info("侵入口から重要ノードへの攻撃パスは見つかりませんでした。")
-
-
-    # 6. Build and display the interactive graph with Pyvis
-    st.subheader("攻撃チェーン可視化")
+    # 5. Build and display the interactive graph with Pyvis
+    st.subheader("攻撃チェーンとして考えられる攻撃経路図")
     
     net = Network(height="755px", width="100%", bgcolor="#ffffff", directed=True)
     
@@ -171,6 +135,42 @@ if drawio_xml and uploaded_reports and uploaded_map:
         html_content = open(tmp_file.name, 'r', encoding='utf-8').read()
         st.components.v1.html(html_content, height=750)
         os.remove(tmp_file.name)
+
+    # 6. Display Detected Attack Paths and Generate Explanations
+    st.subheader("検出された攻撃チェーンにおける総リスク評価")
+    if attack_paths:
+        # Create a reverse map from node ID to domain name for easy lookup
+        id_to_domain_map = {v: k for k, v in manual_map.items()}
+
+        for i, path in enumerate(attack_paths):
+            path_labels = [G.nodes[node_id].get('label', 'unknown') for node_id in path]
+            st.markdown(f"**Path {i+1}:** `{' → '.join(path_labels)}`")
+
+            # --- Prepare data for RAG, including Risk_Scores ---
+            path_node_scores = []
+            for node_id in path:
+                node_info = G.nodes[node_id]
+                path_node_scores.append({
+                    'label': node_info.get('label', 'unknown'),
+                    'Risk_Score': node_info.get('Risk_Score', 'N/A')
+                })
+
+            # --- Display RAG explanation in an expander ---
+            with st.expander(f"Path {i+1} のリスク評価を見る"):
+                # --- DEBUG: Display data being sent to RAG ---
+                # st.subheader("Debug Info: Data for AI")
+                # st.markdown("**Attack Path with Scores:**")
+                # st.json(path_node_scores)
+                # --- END DEBUG ---
+
+                with st.spinner("実際にいくつかの攻撃シナリオが存在する可能性を分析しています..."):
+                    st.subheader("リスク評価")
+                    # Pass the risk scores to the RAG function
+                    explanation = generate_risk_assessment_from_reports(path_node_scores, report_texts)
+                    st.markdown(explanation, unsafe_allow_html=True)
+    else:
+        st.info("侵入口から重要ノードへの攻撃パスは見つかりませんでした。")
+
 
 else:
     st.info("Draw.io XML、脆弱性レポート、マニュアルマップJSONをすべてアップロードすると、分析が開始されます。")
