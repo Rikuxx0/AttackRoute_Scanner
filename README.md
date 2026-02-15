@@ -40,7 +40,8 @@ pip install streamlit pandas networkx pyvis google.generativeai
 4.  ファイルがすべてアップロードされると、自動的に解析が開始されます。
 5.  画面に表示された統合ノード情報、攻撃パス、およびインタラクティブなグラフを確認します。
 
-## Demo動画(Gemini APIの制限上、途中でレポートが出力されていません)
+## Demo動画
+(Gemini APIの制限上、途中まのでレポートしか出力されていません)
 ![Image](https://github.com/user-attachments/assets/0a3b325e-ceeb-4995-9329-961531d75e07)
 
 
