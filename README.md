@@ -42,7 +42,7 @@ pip install streamlit pandas networkx pyvis google.generativeai
 
 ## Demo動画
 (Gemini APIの制限上、途中までのレポートしか出力されていません)
-![Image](https://github.com/user-attachments/assets/0a3b325e-ceeb-4995-9329-961531d75e07)
+
 
 
 ### `manual_mapping.json`の記述例
