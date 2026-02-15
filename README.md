@@ -41,10 +41,7 @@ pip install streamlit pandas networkx pyvis google.generativeai
 5.  画面に表示された統合ノード情報、攻撃パス、およびインタラクティブなグラフを確認します。
 
 ### Demo動画(Gemini APIの制限上、途中でレポートが出力されていません)
-<video src="./demo.mov" controls width="600">
-  Your browser does not support the video tag.
-</video>
-
+![Image](https://github.com/user-attachments/assets/0a3b325e-ceeb-4995-9329-961531d75e07)
 
 
 ### `manual_mapping.json`の記述例
