@@ -40,6 +40,13 @@ pip install streamlit pandas networkx pyvis google.generativeai
 4.  ファイルがすべてアップロードされると、自動的に解析が開始されます。
 5.  画面に表示された統合ノード情報、攻撃パス、およびインタラクティブなグラフを確認します。
 
+### Demo動画(Gemini APIの制限上、途中でレポートが出力されていません)
+<video src="./demo.mov" controls width="600">
+  Your browser does not support the video tag.
+</video>
+
+
+
 ### `manual_mapping.json`の記述例
 Draw.io上のラベル名（例: "OWASP juice-shop"）と、脆弱性レポートに記載されているホスト名（例: "localhost:3000"）をマッピングします。
 
